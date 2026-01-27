@@ -13,12 +13,9 @@ def get_db_connection():
     """Get database connection - PostgreSQL if DATABASE_URL is set, otherwise SQLite"""
     database_url = os.getenv('DATABASE_URL')
     
-    print(f"[DEBUG] DATABASE_URL: {database_url}")
-    
     if database_url and database_url.strip():
         # PostgreSQL connection
         try:
-            print("[DEBUG] Attempting PostgreSQL connection...")
             # Parse the database URL
             parsed = urlparse(database_url)
             
@@ -31,18 +28,14 @@ def get_db_connection():
                 sslmode='require'  # Force SSL for security
             )
             conn.autocommit = True
-            print("[DEBUG] ✅ PostgreSQL connection successful!")
             return conn, 'postgresql'
         except Exception as e:
-            print(f"[DEBUG] ❌ PostgreSQL connection failed: {e}")
-            print("[DEBUG] Falling back to SQLite...")
-    else:
-        print("[DEBUG] No DATABASE_URL found, using SQLite...")
+            print(f"PostgreSQL connection failed: {e}")
+            print("Falling back to SQLite...")
     
     # SQLite connection (fallback)
     conn = sqlite3.connect("users.db", detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
     conn.row_factory = sqlite3.Row
-    print("[DEBUG] ✅ SQLite connection successful!")
     return conn, 'sqlite'
 
 def init_db():
