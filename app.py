@@ -390,6 +390,84 @@ def add_waiter():
     except Exception as e:
         return jsonify({"status": "error", "message": f"Username '{username}' already exists."}), 409
 
+@app.route('/admin/delete_waiter', methods=['POST'])
+@login_required(role="admin")
+def delete_waiter():
+    waiter_id = request.form.get('waiter_id')
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT username FROM waiters WHERE id = ?", (waiter_id,))
+        waiter = cursor.fetchone()
+        if waiter:
+            cursor.execute("DELETE FROM waiters WHERE id = ?", (waiter_id,))
+            conn.commit()
+            return jsonify({"status": "success", "message": "Waiter deleted."})
+    return jsonify({"status": "error", "message": "Waiter not found."}), 404
+
+@app.route('/admin/edit_waiter', methods=['POST'])
+@login_required(role="admin")
+def edit_waiter():
+    waiter_id = request.form.get('waiter_id')
+    new_username = request.form.get('username')
+    new_password = request.form.get('new_password')
+    if not new_username:
+        return jsonify({"status": "error", "message": "Username cannot be empty."}), 400
+    
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        try:
+            if new_password:
+                hashed_password = generate_password_hash(new_password)
+                cursor.execute("UPDATE waiters SET username = ?, password_hash = ? WHERE id = ?", (new_username, hashed_password, waiter_id))
+                conn.commit()
+                return jsonify({"status": "success", "message": f"Waiter '{new_username}' updated (password changed)."})
+            else:
+                cursor.execute("UPDATE waiters SET username = ? WHERE id = ?", (new_username, waiter_id))
+                conn.commit()
+                return jsonify({"status": "success", "message": f"Waiter username updated to '{new_username}'."})
+        except Exception as e:
+            return jsonify({"status": "error", "message": f"Username '{new_username}' is already taken."}), 409
+
+@app.route('/seat_manually', methods=['POST'])
+@login_required(role="admin")
+def seat_manually():
+    data = request.get_json()
+    customer_id = data.get('customer_id')
+    table_ids = data.get('table_ids', [])
+
+    if not customer_id or not table_ids:
+        return jsonify({"status": "error", "message": "Missing customer or table selection."}), 400
+
+    # Simple implementation - just remove customer and mark first table as occupied
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM users WHERE id = ?", (customer_id,))
+        customer = cursor.fetchone()
+        if customer:
+            cursor.execute("DELETE FROM users WHERE id = ?", (customer_id,))
+            cursor.execute("UPDATE tables SET status = 'occupied', customer_name = ? WHERE id = ?", (customer['name'], table_ids[0]))
+            conn.commit()
+            return jsonify({"status": "success", "message": "Customer seated successfully."})
+        else:
+            return jsonify({"status": "error", "message": "Customer not found."}), 400
+
+@app.route('/update_table_order', methods=['POST'])
+@login_required(role="admin")
+def update_table_order():
+    ordered_ids = request.json.get('order', [])
+    if not ordered_ids:
+        return jsonify({"status": "error", "message": "No order data received."}), 400
+    
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            for index, table_id in enumerate(ordered_ids):
+                cursor.execute("UPDATE tables SET display_order = ? WHERE id = ?", (index, int(table_id)))
+            conn.commit()
+        return jsonify({"status": "success", "message": "Table order updated successfully."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": "An error occurred while saving."}), 500
+
 if __name__ == "__main__":
     init_db()
     port = int(os.environ.get('PORT', 5000))
