@@ -124,7 +124,7 @@ def health_check():
 
 @app.route("/")
 def home():
-    return "RestroFlow deployed successfully 🚀"
+    return "RestroFlow deployed successfully 🚀 <br><br><a href='/login'>Login to Dashboard</a> <br><a href='/health'>Health Check</a>"
 
 @app.route("/app")
 def index():
@@ -133,6 +133,11 @@ def index():
     elif session.get('waiter_id'):
         return redirect(url_for('waiter_dashboard'))
     return redirect(url_for('login'))
+
+@app.route('/simple')
+def simple_dashboard():
+    """Simple dashboard for testing frontend"""
+    return render_template('simple_dashboard.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -190,12 +195,20 @@ def dashboard():
         'user_type': request.args.get('user_type', '')
     }
     
-    return render_template(
-        'admin.html',
-        waiters=waiters_list,
-        tables=tables_for_filter_list,
-        current_filters=current_filters
-    )
+    # Try to render the full admin template, fallback to simple dashboard
+    try:
+        return render_template(
+            'admin.html',
+            waiters=waiters_list,
+            tables=tables_for_filter_list,
+            current_filters=current_filters
+        )
+    except Exception as e:
+        print(f"Template error: {e}")
+        # Fallback to simple dashboard
+        return render_template('simple_dashboard.html', 
+                             waiters=waiters_list, 
+                             tables=tables_for_filter_list)
 
 @app.route('/api/dashboard_data')
 @login_required(role="admin")
