@@ -124,73 +124,14 @@ def health_check():
 
 @app.route("/")
 def home():
-    return """
-    <html>
-    <head>
-        <title>RestroFlow</title>
-        <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; min-height: 100vh; margin: 0; }
-            .container { max-width: 600px; margin: 0 auto; background: rgba(255,255,255,0.1); padding: 40px; border-radius: 20px; backdrop-filter: blur(10px); }
-            h1 { font-size: 3em; margin-bottom: 20px; }
-            .links { margin-top: 30px; }
-            .btn { display: inline-block; margin: 10px; padding: 15px 30px; background: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 25px; font-size: 1.1em; transition: all 0.3s; }
-            .btn:hover { background: rgba(255,255,255,0.3); transform: translateY(-2px); }
-            .btn.primary { background: rgba(0,123,255,0.8); }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>🍽️ RestroFlow</h1>
-            <p>Restaurant Management System Successfully Deployed! 🚀</p>
-            <div class="links">
-                <a href="/quick-access" class="btn primary">🚀 Quick Dashboard Access</a>
-                <a href="/dashboard" class="btn">🎛️ Full Dashboard</a>
-                <a href="/login" class="btn">🔐 Login</a>
-                <a href="/simple" class="btn">📊 Simple View</a>
-                <a href="/health" class="btn">💚 Health Check</a>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-
-@app.route("/app")
-def index():
     if session.get('is_admin'):
         return redirect(url_for('dashboard'))
     elif session.get('waiter_id'):
         return redirect(url_for('waiter_dashboard'))
     return redirect(url_for('login'))
 
-@app.route('/simple')
-def simple_dashboard():
-    """Simple dashboard for testing frontend"""
-    return render_template('simple_dashboard.html')
 
-@app.route('/tables')
-@login_required(role="admin")
-def tables_page():
-    """Direct link to table management"""
-    return redirect(url_for('dashboard'))
 
-@app.route('/customers')
-@login_required(role="admin") 
-def customers_page():
-    """Direct link to customer queue"""
-    return redirect(url_for('dashboard'))
-
-@app.route('/staff')
-@login_required(role="admin")
-def staff_page():
-    """Direct link to staff management"""
-    return redirect(url_for('dashboard'))
-
-@app.route('/quick-access')
-def quick_access():
-    """Quick access to dashboard for testing (bypasses login)"""
-    session['is_admin'] = True
-    session['username'] = 'admin'
-    return redirect(url_for('dashboard'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -248,20 +189,12 @@ def dashboard():
         'user_type': request.args.get('user_type', '')
     }
     
-    # Try to render the full admin template, fallback to simple dashboard
-    try:
-        return render_template(
-            'admin.html',
-            waiters=waiters_list,
-            tables=tables_for_filter_list,
-            current_filters=current_filters
-        )
-    except Exception as e:
-        print(f"Template error: {e}")
-        # Fallback to simple dashboard
-        return render_template('simple_dashboard.html', 
-                             waiters=waiters_list, 
-                             tables=tables_for_filter_list)
+    return render_template(
+        'admin.html',
+        waiters=waiters_list,
+        tables=tables_for_filter_list,
+        current_filters=current_filters
+    )
 
 @app.route('/api/dashboard_data')
 @login_required(role="admin")
