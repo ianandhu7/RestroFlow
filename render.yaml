@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: restroflow
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASSWORD
+        value: supersecret
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_vLmPxjiygF84@ep-purple-pine-ahsjp37b-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require

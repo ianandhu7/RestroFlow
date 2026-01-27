@@ -1,0 +1,2116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Management Dashboard</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6f42c1;
+            --success-color: #198754;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #6c757d;
+            --text-color: #212529;
+            --text-muted: #6c757d;
+            --sidebar-bg: #ffffff;
+            --body-bg: #f4f7fc;
+            --card-shadow: rgba(31, 38, 135, 0.1);
+            --card-border: rgba(0, 0, 0, 0.05);
+            --sidebar-width: 260px;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--body-bg);
+            color: var(--text-color);
+            margin: 0;
+            font-size: 14px;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 0;
+            flex-shrink: 0;
+            transition: margin-left 0.3s ease-in-out;
+            margin-left: 0;
+        }
+
+        .sidebar-header {
+            padding: 0 24px 20px 24px;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--secondary-color);
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 24px;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .sidebar-nav a:hover {
+            background-color: #f8f9fa;
+            color: var(--primary-color);
+        }
+
+        .sidebar-nav a.active {
+            color: var(--primary-color);
+            font-weight: 700;
+            border-left-color: var(--primary-color);
+            background-color: #eef5ff;
+        }
+
+        .sidebar-nav svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Main content */
+        .main-content {
+            flex-grow: 1;
+            padding: 24px;
+            overflow-y: auto;
+            transition: width 0.3s ease-in-out;
+        }
+
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        /* Sidebar toggle button */
+        .sidebar-toggle-btn {
+            position: fixed;
+            top: 24px;
+            left: calc(var(--sidebar-width) - 18px);
+            z-index: 100;
+            background-color: var(--secondary-color);
+            color: white;
+            border: 2px solid var(--body-bg);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transition: left 0.3s ease-in-out, background-color 0.2s ease;
+        }
+
+        .sidebar-toggle-btn:hover {
+            background-color: var(--primary-color);
+        }
+
+        .sidebar-toggle-btn svg {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        body.sidebar-collapsed .sidebar {
+            margin-left: calc(-1 * var(--sidebar-width));
+        }
+
+        body.sidebar-collapsed .sidebar-toggle-btn {
+            left: 15px;
+        }
+
+        body.sidebar-collapsed .sidebar-toggle-btn svg {
+            transform: rotate(180deg);
+        }
+
+        /* Cards, grids, and UI components */
+        .page-header {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-color);
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px var(--card-shadow);
+            border: 1px solid var(--card-border);
+            padding: 24px;
+            margin-bottom: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--secondary-color);
+            border-bottom: 1px solid #eee;
+            padding-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .dashboard-overview-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .main-column,
+        .side-column {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 20px;
+        }
+
+        .kpi-card {
+            padding: 16px;
+            text-align: left;
+        }
+
+        .kpi-card .icon {
+            font-size: 20px;
+            margin-bottom: 12px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+
+        .kpi-card .value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .kpi-card .label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .chart-container {
+            height: 280px;
+        }
+
+        .next-up-list .party {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .next-up-list .party:last-child {
+            border-bottom: none;
+        }
+
+        .next-up-list .party-info {
+            font-weight: 500;
+        }
+
+        .next-up-list .party-info span {
+            font-weight: 400;
+            color: var(--text-muted);
+            font-size: 0.8em;
+        }
+
+        .next-up-list .suggested-tables {
+            display: flex;
+            gap: 4px;
+        }
+
+        .next-up-list .table-tag {
+            background-color: #eef5ff;
+            color: var(--primary-color);
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .table-status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+            gap: 10px;
+        }
+
+        .table-box {
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            aspect-ratio: 1 / 1;
+            position: relative;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .table-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .table-box h3 {
+            margin: 0 0 2px 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .table-box p {
+            margin: 0;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .table-box .status {
+            font-weight: bold;
+            margin-top: 4px;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+        }
+
+        .table-box .customer-name {
+            font-weight: 500;
+            color: var(--text-color);
+            margin: 4px 0;
+            font-size: 0.75rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            width: 100%;
+            text-align: center;
+        }
+
+        .table-box.free {
+            color: #155724;
+            border: 2px solid #28a745;
+            background-color: #d4edda;
+        }
+
+        .table-box.occupied {
+            color: #e21a2e;
+            border: 2px solid #e72437;
+            background-color: #f8d7da;
+            animation: pulse-red 2.5s infinite;
+        }
+
+        .table-box.blocked {
+            color: #767575;
+            background-color: #fff3cd;
+            border: 2px solid #f2c12e;
+        }
+
+        .table-box .delete-form {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+        }
+
+        .table-box .delete-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--danger-color);
+            padding: 3px;
+            display: none;
+        }
+
+        .table-box .btn-sm {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        #add-table-container {
+            display: none;
+        }
+
+        .table-status-grid.edit-mode .table-box {
+            cursor: grab;
+        }
+
+        .table-status-grid.edit-mode .table-box:active {
+            cursor: grabbing;
+        }
+
+        .table-status-grid.edit-mode .delete-btn {
+            display: block;
+        }
+
+        .table-box.sortable-ghost {
+            opacity: 0.4;
+            background-color: #eef5ff;
+            border: 2px dashed var(--primary-color);
+        }
+
+        .table-box.sortable-drag {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            transform: scale(1.05);
+        }
+
+        .table-scroll-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 14px 16px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+        }
+
+        th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        td .wait-time {
+            font-weight: 600;
+            color: var(--warning-color);
+        }
+
+        td.empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+            text-decoration: none;
+        }
+
+        #edit-tables-btn.btn-info {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+
+        #edit-tables-btn.btn-info:hover {
+            opacity: 0.8;
+        }
+
+        .btn:hover {
+            opacity: 0.85;
+        }
+
+        .btn[disabled] {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+        }
+
+        .btn-info {
+            background-color: var(--info-color);
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .form-grid label {
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .form-grid input,
+        .form-grid select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            background-color: #fff;
+            transition: border-color 0.2s;
+        }
+
+        .form-grid input:focus,
+        .form-grid select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        .queue-management-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .flash-messages {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .flash {
+            padding: 12px 20px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            font-weight: 500;
+            color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .flash.success {
+            background-color: var(--success-color);
+        }
+
+        .flash.error {
+            background-color: var(--danger-color);
+        }
+
+        .page-controls {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .control-group label {
+            font-weight: 500;
+            color: var(--text-color);
+            cursor: pointer;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+        }
+
+        input:checked+.slider {
+            background-color: var(--success-color);
+        }
+
+        input:focus+.slider {
+            box-shadow: 0 0 1px var(--success-color);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(22px);
+        }
+
+        .slider.round {
+            border-radius: 28px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
+            padding-top: 16px;
+            border-top: 1px solid #eee;
+            margin-top: auto;
+        }
+
+        .pagination-info {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .action-forms-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .action-forms-container .card {
+            padding: 16px;
+        }
+
+        .action-forms-container .card h2 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .action-forms-container .form-grid {
+            gap: 8px;
+        }
+
+        .action-forms-container label {
+            font-size: 0.8rem;
+            margin-bottom: 2px;
+        }
+
+        .action-forms-container input,
+        .action-forms-container select {
+            padding: 7px;
+            font-size: 13px;
+        }
+
+        .action-forms-container .btn {
+            padding: 7px 0;
+            font-size: 13px;
+        }
+
+        .form-divider {
+            border: none;
+            border-top: 1px solid #eee;
+            margin: 16px 0 12px 0;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        .filter-grid label {
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .filter-grid input[type="date"],
+        .filter-grid input[type="text"],
+        .filter-grid select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            background-color: #fff;
+            transition: border-color 0.2s;
+        }
+
+        .filter-grid input:focus,
+        .filter-grid select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        .filter-grid .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .phone-input-wrapper {
+            position: relative;
+        }
+
+        .phone-prefix {
+            position: absolute;
+            top: 50%;
+            left: 12px;
+            transform: translateY(-50%);
+            font-weight: 500;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        #new_phone_number {
+            padding-left: 45px !important;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .action-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-weight: 600;
+            color: #fff;
+            font-size: 0.8rem;
+            text-transform: capitalize;
+            text-align: center;
+        }
+
+        .action-badge.blocked,
+        .action-badge.waiter_deleted,
+        .action-badge.table_deleted {
+            background-color: var(--danger-color);
+        }
+
+        .action-badge.cleared,
+        .action-badge.waiter_added,
+        .action-badge.table_added {
+            background-color: var(--success-color);
+        }
+
+        .action-badge.made_available {
+            background-color: var(--primary-color);
+        }
+
+        .action-badge.waiter_updated {
+            background-color: var(--secondary-color);
+        }
+
+        .action-badge.seated_manually,
+        .action-badge.customer_added_manually {
+            background-color: var(--info-color);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 500px;
+        }
+
+        #free-tables-list {
+            max-height: 160px;
+            overflow-y: auto;
+            background: #fff;
+            padding: 4px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+
+        .table-checkbox-item {
+            padding: 3px 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .table-checkbox-item:hover {
+            background-color: #f0f2f5;
+        }
+
+        .table-checkbox-item input[type="checkbox"] {
+            margin: 0 8px 0 0;
+            cursor: pointer;
+            vertical-align: middle;
+        }
+
+        .table-checkbox-item label {
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            vertical-align: middle;
+        }
+
+        .table-checkbox-item.selected {
+            background-color: #eaf1ff;
+        }
+
+        .table-checkbox-item.selected label {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        #selected-capacity-info {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+            text-align: right;
+        }
+
+        #selected-capacity-info.sufficient {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        #selected-capacity-info.insufficient {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+
+        @media (max-width: 992px) {
+
+            .dashboard-overview-grid,
+            .queue-management-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @keyframes pulse-red {
+            0% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.5);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-2.5a2 2 0 0 0-1.6.8L8 14.333 6.1 11.8a2 2 0 0 0-1.6-.8H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2.5a1 1 0 0 1 .8.4l1.9 2.533a1 1 0 0 0 1.6 0l1.9-2.533a1 1 0 0 1 .8-.4H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z" />
+                <path d="M7.002 4a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z" />
+            </svg>
+            <span>RestroFlow</span>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="#dashboard" class="nav-link active"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L8 2.207l6.646 6.647a.5.5 0 0 0 .708-.708L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293z"/><path d="m8 3.293 6 6V13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V9.293z"/></svg><span>Dashboard</span></a></li>
+            <li><a href="#table-status" class="nav-link"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M1.5 0A1.5 1.5 0 0 0 0 1.5v2A1.5 1.5 0 0 0 1.5 5h2A1.5 1.5 0 0 0 5 3.5v-2A1.5 1.5 0 0 0 3.5 0zM1 1.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zM1.5 7A1.5 1.5 0 0 0 0 8.5v2A1.5 1.5 0 0 0 1.5 12h2A1.5 1.5 0 0 0 5 10.5v-2A1.5 1.5 0 0 0 3.5 7zM1 8.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zM7 1.5A1.5 1.5 0 0 0 5.5 3h2A1.5 1.5 0 0 0 9 1.5v-2A1.5 1.5 0 0 0 7.5 0h-2A1.5 1.5 0 0 0 4 1.5zM7 1a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zM6.5 7A1.5 1.5 0 0 0 5 8.5v2A1.5 1.5 0 0 0 6.5 12h2A1.5 1.5 0 0 0 10 10.5v-2A1.5 1.5 0 0 0 8.5 7zM6 8.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zM12.5 0A1.5 1.5 0 0 0 11 1.5v2A1.5 1.5 0 0 0 12.5 5h2A1.5 1.5 0 0 0 16 3.5v-2A1.5 1.5 0 0 0 14.5 0zM12 1.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zM11.5 7A1.5 1.5 0 0 0 10 8.5v2A1.5 1.5 0 0 0 11.5 12h2A1.5 1.5 0 0 0 15 10.5v-2A1.5 1.5 0 0 0 13.5 7zM11 8.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5z"/></svg><span>Table Status</span></a></li>
+            <li><a href="#occupied-tables" class="nav-link"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M15 14s1 0 1-1-1-4-6-4-6 3-6 4 1 1 1 1zm-7.978-1L7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002-.014.002H15a1 1 0 0 0 1-1 1 1 0 0 0-1-1H2a1 1 0 0 0-1 1 1 1 0 0 0 1 1zM11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0M8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4"/></svg><span>Occupied Tables</span></a></li>
+            <li><a href="#queue-management" class="nav-link"><svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0"/></svg><span>Queue Management</span></a></li>
+            <li><a href="#customer-history" class="nav-link"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .586.023l.08.008.08.007.08.007.079.007.08.006.08.006.079.006.08.005.079.005.08.005.079.004.08.004.079.004.08.003.079.003.08.003.079.002.08.002.08.002.079.002.08.001.079.001.08.001.079.001h.002a.5.5 0 0 1 .5.5v.382a.5.5 0 0 1-.298.456l-1.898.95c-.283.142-.65.03-.84-.239l-.898-1.348a.5.5 0 0 1 .24-1.105l1.348-.898.299-.198a.5.5 0 0 1 .456-.298zm-2.903.085a.5.5 0 0 1 .14-.705l.385-.385a.5.5 0 0 1 .707 0l.385.385a.5.5 0 0 1-.14.705l-1.365.91a.5.5 0 0 1-.705-.14l-.385-.385a.5.5 0 0 1 0-.707l.91-1.365z"/><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/></svg><span>Customer History</span></a></li>
+            <li><a href="#manage-waiters" class="nav-link"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"> <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/> </svg><span>Manage Waiters</span></a></li>
+            <li><a href="#activity-log" class="nav-link"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M4 11a1 1 0 1 1 2 0v1a1 1 0 1 1-2 0zm6-4a1 1 0 1 1 2 0v5a1 1 0 1 1-2 0zM7 9a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0z"/><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z"/></svg><span>Activity Log</span></a></li>
+            <li>
+                <a href="{{ url_for('logout') }}" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z" />
+                        <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z" />
+                    </svg>
+                    <span>Logout</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <main class="main-content">
+        <button id="sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z" />
+            </svg>
+        </button>
+        <div class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+        </div>
+
+        <section id="dashboard-view" class="view-section active">
+            <h1 class="page-header">Dashboard Overview</h1>
+            <div class="dashboard-overview-grid">
+                <div class="main-column">
+                    <div class="card">
+                        <div class="kpi-grid">
+                            <div class="kpi-card">
+                                <div class="icon" style="background-color: var(--primary-color);">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
+                                    </svg>
+                                </div>
+                                <p class="value" id="kpi-queue">0</p>
+                                <p class="label">Customers in Queue</p>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="icon" style="background-color: var(--danger-color);">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2zm10.5 4.5v3h-2v-3zm0 4v3h-2v-3zm-3.5.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zm-5 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5zM3.5 5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5z" />
+                                    </svg>
+                                </div>
+                                <p class="value" id="kpi-occupied">0</p>
+                                <p class="label">Occupied Tables</p>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="icon" style="background-color: var(--success-color);">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0M9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1M6.854 7.146a.5.5 0 1 1-.708.708L7.293 9l-1.147 1.146a.5.5 0 0 1-.708.708L6.5 9.707l-1.146 1.147a.5.5 0 0 1-.708-.708L5.793 9 4.646 7.854a.5.5 0 1 1 .708-.708L6.5 8.293z" />
+                                    </svg>
+                                </div>
+                                <p class="value" id="kpi-free">0</p>
+                                <p class="label">Free Tables</p>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="icon" style="background-color: var(--warning-color);">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z" />
+                                        <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0" />
+                                    </svg>
+                                </div>
+                                <p class="value"><span id="kpi-avg-wait">0</span> <span style="font-size: 1.2rem;">min</span></p>
+                                <p class="label">Avg. Wait Time</p>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="icon" style="background-color: var(--secondary-color);">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M8.5 5.5a.5.5 0 0 0-1 0v3.362l-1.429 2.38a.5.5 0 1 0 .858.515l1.5-2.5A.5.5 0 0 0 8.5 9z" />
+                                        <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07a7.001 7.001 0 0 0-3.273 12.474l-.602.602a.5.5 0 0 0 .707.708l.746-.746A6.97 6.97 0 0 0 8 16a6.97 6.97 0 0 0 3.422-.892l.746.746a.5.5 0 0 0 .707-.708l-.601-.602A7.001 7.001 0 0 0 9 2.07V1h.5a.5.5 0 0 0 0-1zm1.038 3.018a6 6 0 0 1 .924 0 6 6 0 1 1-.924 11.962 6 6 0 0 1 .924-11.962z" />
+                                    </svg>
+                                </div>
+                                <p class="value"><span id="kpi-longest-wait">0</span> <span style="font-size: 1.2rem;">min</span></p>
+                                <p class="label">Longest Wait</p>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="icon" style="background-color: var(--info-color);">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M15.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 0 1 .708-.708L12.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0" />
+                                        <path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
+                                    </svg>
+                                </div>
+                                <p class="value" id="kpi-seated-today">0</p>
+                                <p class="label">Parties Seated Today</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card next-up">
+                        <h2>Next Up To Be Seated</h2>
+                        <div class="next-up-list" id="next-up-list-container"></div>
+                    </div>
+                </div>
+                <div class="side-column">
+                    <div class="card">
+                        <h2>Seated Parties Per Hour</h2>
+                        <div class="chart-container">
+                            <canvas id="peakHoursChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="table-status-view" class="view-section">
+            <div class="table-status-header">
+                <h1 class="page-header" style="margin-bottom: 0;">Table Status</h1>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div id="add-table-container" style="display: none;">
+                        <form id="add-table-form" action="{{ url_for('add_table') }}" method="post" style="display: flex; gap: 10px; align-items: center;">
+                            <input type="text" name="table_number" placeholder="Table No." required style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 80px;">
+                            <input type="number" name="capacity" placeholder="Capacity" required min="1" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 80px;">
+                            <button type="submit" class="btn btn-success btn-sm">Add Table</button>
+                        </form>
+                    </div>
+                    <button id="edit-tables-btn" class="btn btn-info">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .708L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/><path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z"/></svg>
+                        <span>Edit Layout</span>
+                    </button>
+                </div>
+            </div>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+            <div class="table-status-grid" id="table-status-grid-container"></div>
+        </section>
+
+        <section id="occupied-tables-view" class="view-section">
+            <h1 class="page-header" id="occupied-tables-header">Occupied Tables</h1>
+            <div class="card" style="margin-bottom: 24px;">
+                <div class="table-scroll-container">
+                    <table id="occupied-tables-table">
+                        <thead>
+                            <tr>
+                                <th>Table</th>
+                                <th>Customer Name</th>
+                                <th>Party Size</th>
+                                <th>Phone</th>
+                                <th>Seated At</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="queue-management-view" class="view-section">
+            <h1 class="page-header">Queue Management</h1>
+            <div class="page-controls">
+                <div class="control-group">
+                    <form action="{{ url_for('run_auto_seat') }}" method="post" style="margin: 0;">
+                        <button type="submit" class="btn btn-info">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.902 3.433 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.892 3.433-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527-1.79 3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.892-1.64-.902-3.433-2.541-2.54l-.292.159A1.873 1.873 0 0 0 7.163 1.626l.094-.319z"/></svg>
+                            Run Allocator Now
+                        </button>
+                    </form>
+                </div>
+                <div class="control-group">
+                    <form id="toggle-allocator-form" action="{{ url_for('toggle_auto_allocator') }}" method="post" style="margin: 0;">
+                        <label for="auto-allocator-toggle">Auto-Allocator</label>
+                        <label class="switch">
+                            <input type="checkbox" id="auto-allocator-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                    </form>
+                </div>
+            </div>
+            <div class="queue-management-layout">
+                <div class="card">
+                    <h2>
+                        <span id="waiting-queue-header">Waiting Queue</span>
+                        <span class="pagination-info" id="pagination-info"></span>
+                    </h2>
+                    <div class="table-scroll-container">
+                        <table id="waiting-queue-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th># People</th>
+                                    <th>Wait Time</th>
+                                    <th>Phone</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-controls">
+                        <button id="prev-page" class="btn btn-sm"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg> Prev</button>
+                        <button id="next-page" class="btn btn-sm">Next <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg></button>
+                    </div>
+                </div>
+                <div class="action-forms-container">
+                    <div class="card">
+                        <h2>Add Customer</h2>
+                        <form id="add-customer-form" action="{{ url_for('add_customer') }}" method="post" class="form-grid">
+                            <div>
+                                <label for="new_customer_name">Name:</label>
+                                <input type="text" id="new_customer_name" name="name" required>
+                            </div>
+                            <div>
+                                <label for="new_people_count">Party Size:</label>
+                                <input type="number" id="new_people_count" name="people_count" min="1" required>
+                            </div>
+                            <div>
+                                <label for="new_phone_number">Phone (Optional):</label>
+                                <div class="phone-input-wrapper">
+                                    <span class="phone-prefix">+91</span>
+                                    <input type="tel" id="new_phone_number" name="phone_number" maxlength="10" pattern="[0-9]{10}" placeholder="98765 43210" title="Please enter a 10-digit Indian mobile number." oninput="this.value = this.value.replace(/\D/g, '')">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-success">Add to Queue</button>
+                        </form>
+                        <hr class="form-divider">
+                        <h2>Seat Manually</h2>
+                        <form id="seat-manually-form" action="{{ url_for('seat_manually') }}" method="post" class="form-grid">
+                            <div>
+                                <label for="customer-select">Customer:</label>
+                                <select name="customer_id" id="customer-select" required></select>
+                            </div>
+                            <div>
+                                <label>Assign to Table(s):</label>
+                                <div id="free-tables-list"></div>
+                                <div id="selected-capacity-info"></div>
+                            </div>
+                            <button type="submit" class="btn btn-primary" disabled>Seat Customer</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="customer-history-view" class="view-section">
+            <h1 class="page-header">Customer Analytics & History</h1>
+            <div class="card">
+                <h2>Filter History</h2>
+                <form id="customer-history-filter-form" method="get" action="#">
+                    <div class="filter-grid">
+                        <div>
+                            <label for="ch_start_date">Start Date:</label>
+                            <input type="date" id="ch_start_date" name="history_start_date">
+                        </div>
+                        <div>
+                            <label for="ch_end_date">End Date:</label>
+                            <input type="date" id="ch_end_date" name="history_end_date">
+                        </div>
+                        <div>
+                            <label for="ch_customer_name">Customer Name:</label>
+                            <input type="text" id="ch_customer_name" name="history_customer_name" placeholder="Search by name...">
+                        </div>
+                        <div>
+                            <label for="ch_table_number">Table Number:</label>
+                            <input type="text" id="ch_table_number" name="history_table_number" placeholder="e.g., T5">
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" class="btn">Apply Filter</button>
+                            <a href="{{ url_for('dashboard') }}#customer-history" class="btn btn-secondary">Clear</a>
+                        </div>
+                    </div>
+                </form>
+                </div>
+            <div class="card" style="margin-top: 24px;">
+                <div class="table-scroll-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Party Size</th>
+                                <th>Table Seated</th>
+                                <th>Arrival Time</th>
+                                <th>Seated Time</th>
+                                <th>Departed Time</th>
+                                <th>Total Wait (min)</th>
+                                <th>Dine Time (min)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="manage-waiters-view" class="view-section">
+            <h1 class="page-header">Manage Waiters</h1>
+            <div class="card">
+                <div style="margin-bottom: 24px;">
+                    <h3>Add New Waiter</h3>
+                    <form id="add-waiter-form" action="{{ url_for('add_waiter') }}" method="post" class="form-grid" style="grid-template-columns: 1fr 1fr auto; gap: 16px; align-items: flex-end;">
+                        <div>
+                            <label for="username">Username</label>
+                            <input type="text" id="username" name="username" required autocomplete="off">
+                        </div>
+                        <div>
+                            <label for="password">Password</label>
+                            <input type="password" id="password" name="password" required autocomplete="new-password">
+                        </div>
+                        <button type="submit" class="btn btn-success">Add Waiter</button>
+                    </form>
+                </div>
+                <div>
+                    <h3>Existing Waiters</h3>
+                    <div class="table-scroll-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 80%;">Username</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for waiter in waiters %}
+                                <tr>
+                                    <td>{{ waiter.username }}</td>
+                                    <td>
+                                        <div style="display: flex; gap: 8px;">
+                                            <button class="btn btn-warning btn-sm edit-waiter-btn" data-waiter-id="{{ waiter.id }}" data-waiter-username="{{ waiter.username }}">Edit</button>
+                                            <form action="{{ url_for('delete_waiter') }}" method="post" style="margin: 0;">
+                                                <input type="hidden" name="waiter_id" value="{{ waiter.id }}">
+                                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="2" class="empty-state">No waiters found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="activity-log-view" class="view-section">
+            <h1 class="page-header">Activity Log</h1>
+            <div class="card">
+                <form id="activity-log-filter-form" method="get" action="#" style="margin-bottom: 24px;">
+                    <div class="filter-grid">
+                        <div>
+                            <label for="user_type_filter">User Type</label>
+                            <select name="user_type" id="user_type_filter">
+                                <option value="" {% if not request.args.get('user_type') %}selected{% endif %}>All Users</option>
+                                <option value="admin" {% if request.args.get('user_type') == 'admin' %}selected{% endif %}>Admin</option>
+                                <option value="waiter" {% if request.args.get('user_type') == 'waiter' %}selected{% endif %}>Waiter</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="user_id_filter">User Name</label>
+                            <select name="user_id" id="user_id_filter"></select>
+                        </div>
+                        <div>
+                            <label for="table_id_filter">Table</label>
+                            <select name="table_id" id="table_id_filter">
+                                <option value="">All Tables</option>
+                                {% for table in tables %}
+                                <option value="{{ table.id }}" {% if current_filters.table_id == table.id|string %}selected{% endif %}>{{ table.table_number }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="al_start_date">Start Date</label>
+                            <input type="date" name="start_date" id="al_start_date" value="{{ current_filters.get('start_date', '') }}">
+                        </div>
+                        <div>
+                            <label for="al_end_date">End Date</label>
+                            <input type="date" name="end_date" id="al_end_date" value="{{ current_filters.get('end_date', '') }}">
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" class="btn">Filter</button>
+                            <button type="button" id="clear-log-filters-btn" class="btn btn-secondary">Clear</button>
+                        </div>
+                    </div>
+                </form>
+                <div class="table-scroll-container">
+                    <table class="log-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%;">Timestamp</th>
+                                <th style="width: 15%;">User</th>
+                                <th style="width: 15%;">Action Badge</th>
+                                <th style="width: 45%;">Action Details</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <div id="edit-waiter-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content">
+                <h2 style="margin-top: 0;">Edit Waiter</h2>
+                <form action="{{ url_for('edit_waiter') }}" method="post">
+                    <input type="hidden" id="edit_waiter_id" name="waiter_id">
+                    <div class="form-grid" style="gap: 20px;">
+                        <div>
+                            <label for="edit_username">Username</label>
+                            <input type="text" id="edit_username" name="username" required>
+                        </div>
+                        <div>
+                            <label for="edit_password">New Password (Optional)</label>
+                            <input type="password" id="edit_password" name="new_password" placeholder="Leave blank to keep current password">
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
+                            <button type="button" id="cancel-edit-btn" class="btn btn-secondary">Cancel</button>
+                            <button type="submit" class="btn btn-success">Save Changes</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div    </main>
+
+    <script></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- State Variables ---
+            let peakHoursChart = null;
+            let currentPage = 1;
+            const itemsPerPage = 6;
+            let customersData = [];
+            let chartInstance = null;
+            let dashboardUpdateInterval = null;
+            let isEditMode = false;
+            let sortableInstance = null;
+
+            // --- Element References ---
+            const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
+            const sections = document.querySelectorAll('.view-section');
+            const editModal = document.getElementById('edit-waiter-modal');
+            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+            const sidebarToggleBtn = document.getElementById('sidebar-toggle');
+            const body = document.body;
+            const editTablesBtn = document.getElementById('edit-tables-btn');
+            const tableGridContainer = document.getElementById('table-status-grid-container');
+            const addTableContainer = document.getElementById('add-table-container');
+
+            // --- Helper Functions ---
+            function stopDashboardUpdates() {
+                if (dashboardUpdateInterval) {
+                    clearInterval(dashboardUpdateInterval);
+                    dashboardUpdateInterval = null;
+                }
+            }
+
+            function startDashboardUpdates() {
+                if (dashboardUpdateInterval) return;
+                updateDashboardData();
+                // --- Replace polling with real-time updates using SSE ---
+const eventSource = new EventSource("/stream");
+
+eventSource.onmessage = (event) => {
+    if (event.data === "update") {
+        console.log("🔄 Change detected, refreshing dashboard...");
+        updateDashboardData();
+    }
+};
+
+eventSource.onerror = (err) => {
+    console.error("SSE connection error:", err);
+};
+
+                // dashboardUpdateInterval = setInterval(updateDashboardData, 5000);
+            }
+
+            function showView(viewId) {
+                sections.forEach(sec => sec.classList.remove('active'));
+                navLinks.forEach(link => link.classList.remove('active'));
+                const targetSection = document.getElementById(viewId + '-view');
+                if (targetSection) {
+                    const targetLink = document.querySelector(`.nav-link[href="#${viewId}"]`);
+                    targetSection.classList.add('active');
+                    if (targetLink) targetLink.classList.add('active');
+                }
+            }
+
+            function displayFlashMessage(message, category) {
+                const container = document.querySelector('.flash-messages');
+                const flash = document.createElement('div');
+                flash.className = `flash ${category}`;
+                flash.textContent = message;
+                container.appendChild(flash);
+                setTimeout(() => {
+                    flash.style.opacity = '0';
+                    setTimeout(() => flash.remove(), 500);
+                }, 3000);
+            }
+
+            function hideModal() {
+                editModal.style.display = 'none';
+            }
+
+            // --- Core Data Fetch and View Update Logic ---
+            async function updateDashboardData() {
+                const activityForm = document.getElementById('activity-log-filter-form');
+                const historyForm = document.getElementById('customer-history-filter-form');
+                const allParams = new URLSearchParams();
+
+                if (activityForm) {
+                    const activityParams = new URLSearchParams(new FormData(activityForm));
+                    for (const [key, value] of activityParams.entries()) {
+                        allParams.append(key, value);
+                    }
+                }
+                if (historyForm) {
+                    const historyParams = new URLSearchParams(new FormData(historyForm));
+                    for (const [key, value] of historyParams.entries()) {
+                        if (value) {
+                            allParams.append(key, value);
+                        }
+                    }
+                }
+
+                const url = `{{ url_for('api_dashboard_data') }}?${allParams.toString()}`;
+                try {
+                    const response = await fetch(url);
+                    if (response.status === 401) {
+                        window.location.href = "{{ url_for('login') }}";
+                        return;
+                    }
+                    if (!response.ok) return;
+                    const data = await response.json();
+                    updateAllViews(data);
+                } catch (error) {
+                    console.error("Error fetching dashboard updates:", error);
+                }
+            }
+
+           // REPLACE this entire function in your script
+function updateAllViews(data) {
+    // Update KPIs and other parts of the dashboard as usual
+    document.getElementById('kpi-queue').textContent = data.customers.length;
+    document.getElementById('kpi-occupied').textContent = data.occupied_tables.length;
+    document.getElementById('kpi-free').textContent = data.free_tables.length;
+    document.getElementById('kpi-avg-wait').textContent = data.analytics.avg_wait_time;
+    document.getElementById('kpi-longest-wait').textContent = data.analytics.longest_wait_time;
+    document.getElementById('kpi-seated-today').textContent = data.analytics.seated_today;
+
+    // This is the crucial fix: Only update the table grid if NOT in edit mode.
+    // This protects your drag-and-drop changes from being overwritten by the auto-refresh.
+    if (!isEditMode) {
+        updateTableStatusGrid(data.all_tables);
+    }
+    
+    // Update the other components
+    customersData = data.customers; // Update data for pagination
+    updateQueueTable();
+    updateNextUpPanel(data.customers);
+    updateOccupiedTables(data.occupied_tables);
+    updateManualSeatOptions(data.customers, data.free_tables);
+    updateAllocatorToggle(data.auto_allocator_status);
+    updateActivityLog(data.logs);
+    updatePeakHoursChart(data.analytics.peak_hours_data);
+    populateUserNameFilter(data.waiters);
+    updateCustomerHistoryTable(data.history_data);
+}
+
+            // --- COMPONENT-SPECIFIC UPDATE FUNCTIONS ---
+            
+            function updateCustomerHistoryTable(historyData) {
+    const tbody = document.querySelector('#customer-history-view table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (!historyData || historyData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No customer history found for the selected filters.</td></tr>';
+        return;
+    }
+    historyData.forEach(item => {
+        const arrival = new Date(item.arrival_timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+        const seated = item.seated_timestamp ? new Date(item.seated_timestamp).toLocaleTimeString('en-IN', { timeStyle: 'short' }) : 'N/A';
+        const departed = item.departed_timestamp ? new Date(item.departed_timestamp).toLocaleTimeString('en-IN', { timeStyle: 'short' }) : '-';
+        let waitMin = '-';
+        if (item.seated_timestamp && item.arrival_timestamp) {
+            waitMin = Math.round((new Date(item.seated_timestamp) - new Date(item.arrival_timestamp)) / 60000);
+        }
+        let dineMin = '-';
+        if (item.departed_timestamp && item.seated_timestamp) {
+            dineMin = Math.round((new Date(item.departed_timestamp) - new Date(item.seated_timestamp)) / 60000);
+        }
+        const rowHtml = `<tr>
+            <td><strong>${item.name}</strong></td>
+            <td>${item.phone_number || 'Walk-in'}</td>
+            <td>${item.people_count}</td>
+            <td>${item.table_number || '-'}</td>
+            <td>${arrival}</td>
+            <td>${seated}</td>
+            <td>${departed}</td>
+            <td>${waitMin}</td>
+            <td>${dineMin}</td>
+        </tr>`;
+        tbody.insertAdjacentHTML('beforeend', rowHtml);
+    });
+}
+
+           function updateTableStatusGrid(allTables) {
+    if (!tableGridContainer) return;
+
+    // If SortableJS drag-and-drop is active, we need to destroy it before re-drawing the grid
+    if (sortableInstance) {
+        sortableInstance.destroy();
+        sortableInstance = null;
+    }
+
+    tableGridContainer.innerHTML = ''; // Clear the current grid
+    
+    allTables.forEach(table => {
+        let actionButtonHtml = '';
+        if (table.status === 'occupied') {
+            actionButtonHtml = `<p class="customer-name" title="${table.customer_name || ''}">${table.customer_name || ''}</p><form action="{{ url_for('free_table') }}" method="post"><input type="hidden" name="table_id" value="${table.id}"><button type="submit" class="btn btn-warning btn-sm">Mark Free</button></form>`;
+        } else if (table.status === 'blocked') {
+            actionButtonHtml = `<p class="status"><strong>Unavailable</strong></p><form action="{{ url_for('free_table') }}" method="post"><input type="hidden" name="table_id" value="${table.id}"><button type="submit" class="btn btn-success btn-sm">Make Available</button></form>`;
+        } else {
+            actionButtonHtml = `<p class="status"><strong>Free</strong></p><form action="{{ url_for('block_table') }}" method="post"><input type="hidden" name="table_id" value="${table.id}"><button type="submit" class="btn btn-info btn-sm">Unavailable</button></form>`;
+        }
+        tableGridContainer.innerHTML += `
+            <div class="table-box ${table.status}" data-id="${table.id}">
+                <form action="/delete_table/${table.id}" method="post" class="delete-form">
+                    <button type="submit" class="delete-btn" title="Delete Table"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293z"/></svg></button>
+                </form>
+                <div><h3>${table.table_number}</h3><p>Cap: ${table.capacity}</p></div>
+                <div>${actionButtonHtml}</div>
+            </div>`;
+    });
+
+    // If we are in edit mode, re-apply the class and re-initialize drag-and-drop
+    if (isEditMode) {
+        tableGridContainer.classList.add('edit-mode');
+        sortableInstance = new Sortable(tableGridContainer, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag'
+        });
+    } else {
+         tableGridContainer.classList.remove('edit-mode');
+    }
+}
+
+            function populateUserNameFilter(waiters) {
+                const userTypeSelect = document.getElementById('user_type_filter');
+                const userNameSelect = document.getElementById('user_id_filter');
+                const selectedUserType = userTypeSelect.value;
+                const previouslySelectedUser = userNameSelect.value;
+                userNameSelect.innerHTML = '';
+                const allOption = document.createElement('option');
+                allOption.value = "";
+                allOption.textContent = "All Names";
+                userNameSelect.appendChild(allOption);
+                if (selectedUserType === '' || selectedUserType === 'admin') {
+                    const adminOption = document.createElement('option');
+                    adminOption.value = "admin";
+                    adminOption.textContent = "Admin";
+                    userNameSelect.appendChild(adminOption);
+                }
+                if (selectedUserType === '' || selectedUserType === 'waiter') {
+                    waiters.forEach(waiter => {
+                        const option = document.createElement('option');
+                        option.value = waiter.id;
+                        option.textContent = waiter.username;
+                        userNameSelect.appendChild(option);
+                    });
+                }
+                if (userNameSelect.querySelector(`option[value="${previouslySelectedUser}"]`)) {
+                    userNameSelect.value = previouslySelectedUser;
+                }
+            }
+
+            function updateOccupiedTables(occupiedTables) {
+                const tbody = document.getElementById('occupied-tables-table').querySelector('tbody');
+                const header = document.getElementById('occupied-tables-header');
+                tbody.innerHTML = '';
+                const groupedParties = {};
+                occupiedTables.forEach(table => {
+                    const key = table.customer_name + '|' + table.occupied_timestamp;
+                    if (!groupedParties[key]) {
+                        groupedParties[key] = {
+                            name: table.customer_name,
+                            people_count: table.people_count,
+                            phone_number: table.customer_phone_number,
+                            seated_timestamp: table.occupied_timestamp,
+                            tables: []
+                        };
+                    }
+                    groupedParties[key].tables.push(table.table_number);
+                });
+                const partiesToDisplay = Object.values(groupedParties);
+                header.textContent = `Seated Parties (${partiesToDisplay.length})`;
+                if (partiesToDisplay.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No parties are currently seated.</td></tr>';
+                } else {
+                    partiesToDisplay.forEach(party => {
+                        const seatedTime = party.seated_timestamp ? new Date(party.seated_timestamp).toLocaleTimeString('en-IN', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                        }) : 'N/A';
+                        const tableNames = party.tables.sort((a, b) => parseInt(a.substring(1)) - parseInt(b.substring(1))).join(', ');
+                        const rowHtml = `<tr><td><strong>${tableNames}</strong></td><td>${party.name || ''}</td><td>${party.people_count || ''}</td><td>${party.phone_number || 'Walk-in'}</td><td>${seatedTime}</td></tr>`;
+                        tbody.innerHTML += rowHtml;
+                    });
+                }
+            }
+
+            function updateManualSeatOptions(customers, freeTables) {
+                const customerSelect = document.getElementById('customer-select');
+                const tablesContainer = document.getElementById('free-tables-list');
+                const capacityInfo = document.getElementById('selected-capacity-info');
+                const seatManuallyBtn = document.querySelector('#seat-manually-form button[type="submit"]');
+                const currentCustId = customerSelect.value;
+
+                customerSelect.innerHTML = '<option value="">-- Select from Queue --</option>';
+                customers.forEach(c => {
+                    const option = document.createElement('option');
+                    option.value = c.id;
+                    option.textContent = `${c.name} (${c.people_count}p)`;
+                    option.dataset.peopleCount = c.people_count;
+                    customerSelect.appendChild(option);
+                });
+
+                if (customers.find(c => c.id == currentCustId)) {
+                    customerSelect.value = currentCustId;
+                }
+
+                const updateTableSelection = () => {
+                    const selectedOption = customerSelect.options[customerSelect.selectedIndex];
+                    tablesContainer.innerHTML = '';
+                    capacityInfo.innerHTML = '';
+                    seatManuallyBtn.disabled = true;
+
+                    if (!selectedOption || !selectedOption.value) {
+                        tablesContainer.innerHTML = '<div style="padding: 10px; color: var(--text-muted); font-size: 13px;">Please select a customer first.</div>';
+                        return;
+                    }
+
+                    freeTables.forEach(table => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'table-checkbox-item';
+                        const checkbox = document.createElement('input');
+                        const checkboxId = `table-check-${table.id}`;
+                        checkbox.type = 'checkbox';
+                        checkbox.name = 'table_ids';
+                        checkbox.value = table.id;
+                        checkbox.id = checkboxId;
+                        checkbox.dataset.capacity = table.capacity;
+                        const label = document.createElement('label');
+                        label.htmlFor = checkboxId;
+                        label.textContent = `${table.table_number} (Cap: ${table.capacity})`;
+                        itemDiv.appendChild(checkbox);
+                        itemDiv.appendChild(label);
+                        tablesContainer.appendChild(itemDiv);
+                    });
+
+                    if (freeTables.length === 0) {
+                        tablesContainer.innerHTML = '<div style="padding: 10px; color: var(--text-muted); font-size: 13px;">No tables are currently free.</div>';
+                    }
+                };
+
+                const validateSelection = () => {
+                    const selectedOption = customerSelect.options[customerSelect.selectedIndex];
+                    if (!selectedOption || !selectedOption.value) return;
+
+                    const partySize = parseInt(selectedOption.dataset.peopleCount, 10);
+                    const checkedBoxes = tablesContainer.querySelectorAll('input[type="checkbox"]:checked');
+                    let totalCapacity = 0;
+
+                    document.querySelectorAll('.table-checkbox-item').forEach(item => item.classList.remove('selected'));
+
+                    checkedBoxes.forEach(box => {
+                        totalCapacity += parseInt(box.dataset.capacity, 10);
+                        box.closest('.table-checkbox-item').classList.add('selected');
+                    });
+
+                    if (checkedBoxes.length > 0) {
+                        capacityInfo.innerHTML = `Party Size: ${partySize} <br> Selected Capacity: <strong>${totalCapacity}</strong>`;
+                        if (totalCapacity >= partySize) {
+                            capacityInfo.className = 'sufficient';
+                            seatManuallyBtn.disabled = false;
+                        } else {
+                            capacityInfo.className = 'insufficient';
+                            seatManuallyBtn.disabled = true;
+                        }
+                    } else {
+                        capacityInfo.innerHTML = `Party Size: ${partySize} <br> Selected Capacity: 0`;
+                        capacityInfo.className = '';
+                        seatManuallyBtn.disabled = true;
+                    }
+                };
+
+                customerSelect.onchange = () => {
+                    updateTableSelection();
+                    validateSelection();
+                    if (customerSelect.value) stopDashboardUpdates();
+                    else startDashboardUpdates();
+                };
+
+                tablesContainer.onchange = (e) => {
+                    if (e.target.type === 'checkbox') validateSelection();
+                };
+
+                if (customerSelect.value) {
+                    updateTableSelection();
+                    validateSelection();
+                } else {
+                    updateTableSelection();
+                }
+            }
+
+            function updateQueueTable() {
+                const tbody = document.getElementById('waiting-queue-table').querySelector('tbody');
+                const totalItems = customersData.length;
+                const totalPages = Math.ceil(totalItems / itemsPerPage);
+                if (currentPage > totalPages) currentPage = totalPages || 1;
+                const pageCustomers = customersData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+                document.getElementById('waiting-queue-header').textContent = `Waiting Queue (${totalItems})`;
+                document.getElementById('pagination-info').textContent = totalPages > 1 ? `Page ${currentPage} of ${totalPages}` : '';
+                tbody.innerHTML = '';
+                if (pageCustomers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">The waiting queue is empty.</td></tr>';
+                } else {
+                    pageCustomers.forEach(c => {
+                        const waitTimeHtml = c.timestamp ? `<td class="wait-time" data-timestamp="${c.timestamp}">-</td>` : '<td>N/A</td>';
+                        tbody.innerHTML += `<tr><td>${c.name}</td><td>${c.people_count}</td>${waitTimeHtml}<td>${c.phone_number || 'N/A'}</td><td><form action="{{ url_for('remove_customer') }}" method="post"><input type="hidden" name="customer_id" value="${c.id}"><button type="submit" class="btn btn-danger btn-sm">Remove</button></form></td></tr>`;
+                    });
+                    updateWaitTimes();
+                }
+            }
+
+            function updateWaitTimes() {
+                document.querySelectorAll('.wait-time[data-timestamp]').forEach(el => {
+                    const waitingSince = new Date(el.dataset.timestamp.replace(' ', 'T'));
+                    const diffSeconds = Math.floor((new Date() - waitingSince) / 1000);
+                    const minutes = Math.floor(diffSeconds / 60);
+                    el.textContent = minutes > 0 ? `${minutes} min` : `${diffSeconds} sec`;
+                });
+            }
+
+            function updateNextUpPanel(customers) {
+                const container = document.getElementById('next-up-list-container');
+                container.innerHTML = '';
+                if (customers.length === 0) {
+                    container.innerHTML = '<p class="empty-state">Waiting queue is empty.</p>';
+                } else {
+                    customers.slice(0, 3).forEach(c => {
+                        const suggestedHtml = (c.suggested_tables || []).slice(0, 2).map(t => `<span class="table-tag">${t}</span>`).join('') || '<span style="font-size:0.8rem; color: var(--danger-color);">No table</span>';
+                        container.innerHTML += `<div class="party"><div class="party-info">${c.name} <span>(${c.people_count}p)</span></div><div class="suggested-tables">${suggestedHtml}</div></div>`;
+                    });
+                }
+            }
+
+            function updateAllocatorToggle(status) {
+                const toggle = document.getElementById('auto-allocator-toggle');
+                if (toggle) toggle.checked = (status === 'ON');
+            }
+
+            function updateActivityLog(logs) {
+                const tbody = document.querySelector('#activity-log-view .log-table tbody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+
+                if (!logs || logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No activity found for the selected filters.</td></tr>';
+                    return;
+                }
+
+                logs.forEach(log => {
+                    const timestamp = new Date(log.timestamp).toLocaleString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                    const description = log.action_description || 'No details.';
+                    const badgeHtml = `<span class="action-badge ${log.action}">${log.action.replace(/_/g, ' ')}</span>`;
+                    const rowHtml = `
+                <tr>
+                    <td>${timestamp}</td>
+                    <td><strong>${log.actor_name}</strong></td>
+                    <td>${badgeHtml}</td>
+                    <td>${description}</td>
+                </tr>`;
+                    tbody.insertAdjacentHTML('beforeend', rowHtml);
+                });
+            }
+            
+            // **** START OF FIX FOR CHART ****
+            // FIND AND REPLACE YOUR OLD CHART FUNCTION WITH THIS
+// REPLACE your old updatePeakHoursChart function with this new one
+function updatePeakHoursChart(peakHoursData) {
+    const hourlyData = peakHoursData || { labels: [], data: [] };
+    const ctx = document.getElementById('peakHoursChart').getContext('2d');
+
+    // If the chart does NOT exist yet, create it for the first time.
+    if (!peakHoursChart) {
+        peakHoursChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: hourlyData.labels,
+                datasets: [{
+                    label: 'Seated Parties',
+                    data: hourlyData.data,
+                    backgroundColor: 'rgba(111, 66, 193, 0.7)',
+                    borderRadius: 5,
+                    maxBarThickness: 40
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top',
+                        formatter: (value) => value > 0 ? value : '',
+                        color: '#555',
+                        font: { weight: 'bold', size: 14 }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1, precision: 0 }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            },
+            plugins: [ChartDataLabels]
+        });
+    } 
+    // If the chart ALREADY exists, just update its data.
+    else {
+        const maxValue = Math.max(...hourlyData.data, 0);
+        const suggestedMax = Math.max(5, Math.ceil((maxValue + 1) / 2) * 2);
+        
+        peakHoursChart.data.labels = hourlyData.labels;
+        peakHoursChart.data.datasets[0].data = hourlyData.data;
+        peakHoursChart.options.scales.y.suggestedMax = suggestedMax;
+        
+        // This updates the chart smoothly without the full "rise up" animation
+        peakHoursChart.update(); 
+    }
+}
+
+
+            // --- EVENT LISTENERS ---
+
+            const allocatorToggleForm = document.getElementById('toggle-allocator-form');
+if (allocatorToggleForm) {
+    const allocatorToggleInput = allocatorToggleForm.querySelector('#auto-allocator-toggle');
+    allocatorToggleInput.addEventListener('change', async function() {
+        // We don't need to read the checkbox state, the backend will just flip it
+        try {
+            const response = await fetch(allocatorToggleForm.action, {
+                method: 'POST'
+            });
+            const result = await response.json();
+            displayFlashMessage(result.message, response.ok ? 'success' : 'error');
+            // No need to call updateDashboardData() here, as the regular interval will pick it up.
+        } catch (error) {
+            console.error('Error toggling allocator:', error);
+            displayFlashMessage('A network error occurred.', 'error');
+            // If it fails, revert the checkbox to its last known state from the server
+            updateDashboardData(); 
+        }
+    });
+}
+
+            const historyFilterForm = document.getElementById('customer-history-filter-form');
+if (historyFilterForm) {
+    // This part handles the "Apply Filter" button
+    historyFilterForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        updateDashboardData();
+    });
+
+    // This new part handles the "Clear" button
+    const clearHistoryBtn = historyFilterForm.querySelector('.btn-secondary');
+    if (clearHistoryBtn) {
+        clearHistoryBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // Stop the link from just reloading the page
+            historyFilterForm.reset(); // This clears the date and text boxes
+            updateDashboardData(); // This fetches the full, unfiltered list again
+        });
+    }
+}
+
+            const clearLogFiltersBtn = document.getElementById('clear-log-filters-btn');
+            if (clearLogFiltersBtn) {
+                clearLogFiltersBtn.addEventListener('click', () => {
+                    const form = document.getElementById('activity-log-filter-form');
+                    form.reset();
+                    updateDashboardData();
+                });
+            }
+
+            const activityLogForm = document.getElementById('activity-log-filter-form');
+            if (activityLogForm) {
+                activityLogForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    updateDashboardData();
+                });
+            }
+
+            sidebarToggleBtn.addEventListener('click', () => {
+                body.classList.toggle('sidebar-collapsed');
+                localStorage.setItem('sidebarCollapsed', body.classList.contains('sidebar-collapsed'));
+            });
+
+            navLinks.forEach(link => {
+                if (link.getAttribute('href') !== "{{ url_for('logout') }}") {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        window.location.hash = this.getAttribute('href').substring(1);
+                    });
+                }
+            });
+
+            window.addEventListener('hashchange', () => showView(window.location.hash.substring(1) || 'dashboard'));
+
+            editTablesBtn.addEventListener('click', async () => {
+                isEditMode = !isEditMode;
+                if (isEditMode) {
+                    stopDashboardUpdates();
+                    editTablesBtn.innerHTML = `<span>Save Layout</span>`;
+                    editTablesBtn.classList.replace('btn-info', 'btn-success');
+                    tableGridContainer.classList.add('edit-mode');
+                    addTableContainer.style.display = 'block';
+                    sortableInstance = new Sortable(tableGridContainer, {
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        dragClass: 'sortable-drag'
+                    });
+                } else {
+                    const orderedTableIds = sortableInstance.toArray();
+                    try {
+                        const response = await fetch("{{ url_for('update_table_order') }}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                order: orderedTableIds
+                            })
+                        });
+                        const result = await response.json();
+                        displayFlashMessage(result.message, response.ok ? 'success' : 'error');
+                        if (response.ok) {
+                            sortableInstance.destroy();
+                            sortableInstance = null;
+                            editTablesBtn.innerHTML = `<span>Edit Layout</span>`;
+                            editTablesBtn.classList.replace('btn-success', 'btn-info');
+                            tableGridContainer.classList.remove('edit-mode');
+                            addTableContainer.style.display = 'none';
+                            await updateDashboardData();
+                        }
+                    } catch (error) {
+                        console.error("Error saving table order:", error);
+                        displayFlashMessage("A network error occurred while saving.", "error");
+                    } finally {
+                        startDashboardUpdates();
+                    }
+                }
+            });
+
+            if (tableGridContainer) {
+                tableGridContainer.addEventListener('mouseenter', stopDashboardUpdates);
+                tableGridContainer.addEventListener('mouseleave', startDashboardUpdates);
+            }
+
+          
+
+// REPLACE your entire 'submit' event listener with this block
+// REPLACE your entire 'submit' event listener with this corrected block
+
+document.querySelector('main.main-content').addEventListener('submit', async function(e) {
+     console.log("--- LATEST SUBMIT HANDLER IS RUNNING ---"); // <-- ADD THIS LINE
+    // This listener now handles all form submissions on the page
+    if (e.target.tagName !== 'FORM' || e.target.method.toLowerCase() !== 'post') return;
+
+    e.preventDefault();
+    const form = e.target;
+
+    // --- START: NEW LOGIC for the Seat Manually form ---
+    if (form.id === 'seat-manually-form') {
+        const customerId = form.querySelector('#customer-select').value;
+        const checkedBoxes = form.querySelectorAll('input[name="table_ids"]:checked');
+        const tableIds = Array.from(checkedBoxes).map(cb => cb.value);
+
+        if (!customerId || tableIds.length === 0) {
+            displayFlashMessage('You must select a customer and at least one table.', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }, // Send as JSON
+                body: JSON.stringify({ customer_id: customerId, table_ids: tableIds })
+            });
+            const result = await response.json();
+            displayFlashMessage(result.message, response.ok ? 'success' : 'error');
+            if (response.ok) {
+                updateDashboardData(); // Refresh all data on success
+            }
+        } catch (error) {
+            console.error('Seating submission error:', error);
+            displayFlashMessage('A network error occurred while seating the customer.', 'error');
+        }
+        return; // Stop here for this specific form
+    }
+    // --- END: NEW LOGIC for the Seat Manually form ---
+
+    // Logic for all other forms (Add Table, Delete Table, etc.)
+    const isDeleteAction = form.action.includes('/delete_table/');
+    const isAddAction = form.id === 'add-table-form';
+
+    if (isDeleteAction && !confirm('Are you sure? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(form.action, {
+            method: form.method,
+            body: new FormData(form)
+        });
+        
+        const result = await response.json();
+        displayFlashMessage(result.message, response.ok ? 'success' : 'error');
+
+        if (response.ok) {
+            const isTableActionInEditMode = isEditMode && (isAddAction || isDeleteAction);
+
+            if (isTableActionInEditMode && result.all_tables) {
+                originalTablesState = JSON.parse(JSON.stringify(result.all_tables));
+                updateTableStatusGrid(originalTablesState);
+                form.reset();
+            } else {
+                if (form.id.includes('add-') || form.action.includes('edit_waiter')) {
+                    form.reset();
+                    hideModal();
+                }
+                updateDashboardData();
+            }
+        }
+    } catch (error) {
+        console.error('Form submission error:', error);
+        displayFlashMessage('A network error occurred.', 'error');
+    }
+});
+
+            document.querySelector('main').addEventListener('click', function(e) {
+                const editButton = e.target.closest('.edit-waiter-btn');
+                if (editButton) {
+                    document.getElementById('edit_waiter_id').value = editButton.dataset.waiterId;
+                    document.getElementById('edit_username').value = editButton.dataset.waiterUsername;
+                    document.getElementById('edit_password').value = '';
+                    editModal.style.display = 'flex';
+                }
+            });
+
+            cancelEditBtn.addEventListener('click', hideModal);
+            editModal.addEventListener('click', (e) => {
+                if (e.target === editModal) hideModal();
+            });
+
+            // --- INITIALIZATION ---
+            if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                body.classList.add('sidebar-collapsed');
+            }
+            showView(window.location.hash.substring(1) || 'dashboard');
+            startDashboardUpdates();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waiter Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007bff; --secondary-color: #6f42c1; --success-color: #198754;
+            --danger-color: #dc3545; --warning-color: #ffc107; --info-color: #6c757d;
+            --text-color: #212529; --text-muted: #6c757d; --body-bg: #f4f7fc;
+            --card-shadow: rgba(31, 38, 135, 0.1); --card-border: rgba(0, 0, 0, 0.05);
+        }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--body-bg); color: var(--text-color); margin: 0; font-size: 14px; }
+        .main-content { padding: 15px; } /* Reduced overall padding */
+.page-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            font-size: 1.8rem; 
+            font-weight: 700; 
+            color: var(--text-color); 
+            margin-bottom: 15px; /* Reduced margin */
+        }
+        
+        .header-info span { font-size: 1rem; color: var(--text-muted); font-weight: 500; }
+        .card { background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px var(--card-shadow); border: 1px solid var(--card-border); padding: 24px; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; background-color: var(--primary-color); color: white; padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; text-decoration: none; }
+        .btn:hover { opacity: 0.85; }
+        .flash-messages { position: fixed; top: 20px; right: 20px; z-index: 1000; width: 90%; max-width: 400px; }
+        .flash { padding: 12px 20px; margin-bottom: 12px; border-radius: 8px; font-weight: 500; color: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1); opacity: 1; transition: opacity 0.5s ease-out; }
+        .flash.success { background-color: var(--success-color); } .flash.error { background-color: var(--danger-color); }
+        .btn-warning { background-color: var(--warning-color); color: #212529; }
+        .btn-success { background-color: var(--success-color); }
+        .btn-info { background-color: var(--info-color); }
+        .table-status-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); /* Fit more columns */
+            gap: 8px; /* Reduced gap further */
+        }
+        .table-box { 
+            border-radius: 6px; 
+            border: 2px solid #ccc; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 6px; /* Reduced padding */
+            min-height: 80px; /* Significantly reduced min-height */
+        }      
+        .table-box .info { text-align: center; flex-grow: 1; display: flex; flex-direction: column; justify-content: center;}
+.table-box .action { 
+            margin-top: 5px; /* Tighter spacing */
+            width: 100%;
+        }        
+        .table-box h3 { 
+            margin: 0 0 2px 0; 
+            font-size: 0.9rem; /* Reduced font size */
+            font-weight: 600; 
+        }
+        .table-box p { 
+            margin: 0; 
+            font-size: 0.7rem; /* Reduced font size */
+            color: var(--text-muted); 
+        }     
+.table-box .customer-name {
+            font-weight: 500; 
+            margin: 2px 0; 
+            font-size: 0.75rem; /* Reduced font size */
+            color: var(--text-color); 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            white-space: nowrap; 
+            width: 100%; 
+            text-align: center;
+        }
+                .table-box .status { font-weight: bold; text-transform: uppercase; font-size: 0.75rem; }
+        .table-box .btn-sm { 
+            padding: 3px 6px; /* Reduced button padding */
+            font-size: 10px;  /* Reduced button font size */
+            border-radius: 4px; 
+            width: 100%; 
+            box-sizing: border-box; 
+        } 
+        .table-box.free { border-color: #28a745; background-color: #d4edda; }
+        .table-box.occupied { border-color: #dc3545; background-color: #f8d7da;animation: pulse-red 2.5s infinite; }
+        .table-box.blocked { border-color: #ffc107; background-color: #fff3cd; }
+        @keyframes pulse-red { 
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.5); } 
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); } 
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } 
+        }
+
+    </style>
+</head>
+<body>
+<main class="main-content">
+    <div class="flash-messages"></div>
+
+    <div class="page-header">
+        <div class="header-info">
+            <h1>Table Dashboard</h1>
+            <span>Logged in as: <strong>{{ username }}</strong></span>
+        </div>
+        <a href="{{ url_for('logout') }}" class="btn" onclick="return confirm('Are you sure you want to log out?');">Logout</a>
+    </div>
+
+    <div class="card">
+        <div class="table-status-grid" id="table-status-grid">
+            <p>Loading table status...</p>
+        </div>
+    </div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tableGrid = document.getElementById('table-status-grid');
+    let waiterUpdateInterval = null;
+
+    async function updateTableView() {
+        try {
+            // Add timestamp to prevent caching
+            const timestamp = new Date().getTime();
+            const response = await fetch(`{{ url_for('api_waiter_data') }}?_=${timestamp}`, {
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            });
+            
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    window.location.href = "{{ url_for('login') }}";
+                }
+                tableGrid.innerHTML = `<p>Error loading data. Status: ${response.status}</p>`;
+                return;
+            }
+
+            // *** THIS IS THE FIX ***
+            // 1. Get the entire JSON object from the server response.
+            const jsonData = await response.json(); 
+            // 2. Extract the actual array of tables from the "all_tables" key.
+            const allTables = jsonData.all_tables; 
+            
+            tableGrid.innerHTML = ''; // Clear existing content
+
+            if (!allTables || allTables.length === 0) {
+                tableGrid.innerHTML = '<p>No tables have been configured.</p>';
+                return;
+            }
+
+            // 3. Loop through the correct array.
+            allTables.forEach(table => {
+                const tableBox = document.createElement('div');
+                tableBox.className = `table-box ${table.status}`;
+
+                let infoHtml = `<h3>${table.table_number}</h3>`;
+                let actionHtml = '';
+
+                if (table.status === 'occupied') {
+                    infoHtml += `<p class="customer-name" title="${table.customer_name || ''}">${table.customer_name || 'Occupied'}</p><p>${table.people_count || '?'}p</p>`;
+                    actionHtml = `<form action="{{ url_for('free_table') }}" method="post"><input type="hidden" name="table_id" value="${table.id}"><button type="submit" class="btn btn-warning btn-sm">Mark Free</button></form>`;
+                } else if (table.status === 'free') {
+                    infoHtml += `<p class="status">Free</p><p>Cap: ${table.capacity}</p>`;
+                    actionHtml = `<form action="{{ url_for('block_table') }}" method="post"><input type="hidden" name="table_id" value="${table.id}"><button type="submit" class="btn btn-info btn-sm">Unavailable</button></form>`;
+                } else if (table.status === 'blocked') {
+                    infoHtml += `<p class="status">Blocked</p><p>&nbsp;</p>`;
+                    actionHtml = `<form action="{{ url_for('free_table') }}" method="post"><input type="hidden" name="table_id" value="${table.id}"><button type="submit" class="btn btn-success btn-sm">Make Available</button></form>`;
+                }
+
+                tableBox.innerHTML = `<div class="info">${infoHtml}</div><div class="action">${actionHtml}</div>`;
+                tableGrid.appendChild(tableBox);
+            });
+
+        } catch (error) {
+            console.error("Error updating table view:", error);
+            tableGrid.innerHTML = '<p>Error loading data. Please check your connection.</p>';
+        }
+    }
+
+    function displayFlashMessage(message, category) {
+        const container = document.querySelector('.flash-messages');
+        const flash = document.createElement('div');
+        flash.className = `flash ${category}`;
+        flash.textContent = message;
+        container.appendChild(flash);
+        setTimeout(() => {
+            flash.style.opacity = '0';
+            setTimeout(() => flash.remove(), 500);
+        }, 3000);
+    }
+
+    tableGrid.addEventListener('submit', async function(e) {
+        if (e.target.tagName === 'FORM') {
+            e.preventDefault();
+            const form = e.target;
+            try {
+                const response = await fetch(form.action, {
+                    method: 'post',
+                    body: new FormData(form)
+                });
+                const result = await response.json();
+                displayFlashMessage(result.message, response.ok ? 'success' : 'error');
+                if (response.ok) {
+                    await updateTableView();
+                }
+            } catch (error) {
+                console.error("Form submission error:", error);
+                displayFlashMessage("A network error occurred.", "error");
+            }
+        }
+    });
+
+    // --- INITIALIZATION and CLEANUP ---
+    updateTableView();
+    waiterUpdateInterval = setInterval(updateTableView, 5000);
+
+    window.addEventListener('beforeunload', function() {
+        if (waiterUpdateInterval) {
+            clearInterval(waiterUpdateInterval);
+        }
+    });
+});
+</script>
+</body>
+</html>
