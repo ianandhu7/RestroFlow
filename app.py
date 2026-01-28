@@ -2,6 +2,7 @@ import os
 import datetime
 from dotenv import load_dotenv
 from flask import Flask, request, render_template, redirect, url_for, flash, jsonify, session
+from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import sqlite3
@@ -11,6 +12,13 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback_secret_key_for_development_only")
+
+# Enable CORS for React frontend
+CORS(app, supports_credentials=True, origins=[
+    "http://localhost:3000", 
+    "https://restroflow-1-zcqg.onrender.com",
+    "https://*.onrender.com"
+])
 
 ADMIN_USER = os.getenv("ADMIN_USER", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "supersecret")
@@ -136,14 +144,32 @@ def home():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        # Handle JSON requests from React frontend
+        if request.is_json:
+            data = request.get_json()
+            username = data.get('username')
+            password = data.get('password')
+        else:
+            # Handle form submissions from HTML templates
+            username = request.form['username']
+            password = request.form['password']
         
         if username == ADMIN_USER and password == ADMIN_PASSWORD:
             session.clear()
             session['is_admin'] = True
             session['username'] = username
-            return redirect(url_for('dashboard'))
+            
+            # Return JSON response for React frontend
+            if request.is_json:
+                return jsonify({
+                    'success': True,
+                    'message': 'Login successful',
+                    'token': 'admin_token',
+                    'user_type': 'admin'
+                })
+            else:
+                # Redirect for HTML templates
+                return redirect(url_for('dashboard'))
         
         with get_db_connection() as conn:
             cursor = conn.cursor()
@@ -154,9 +180,28 @@ def login():
                 session.clear()
                 session['waiter_id'] = waiter['id']
                 session['waiter_username'] = waiter['username']
-                return redirect(url_for('waiter_dashboard'))
-            
-        flash('Invalid username or password.', 'error')
+                
+                # Return JSON response for React frontend
+                if request.is_json:
+                    return jsonify({
+                        'success': True,
+                        'message': 'Login successful',
+                        'token': f'waiter_token_{waiter["id"]}',
+                        'user_type': 'waiter'
+                    })
+                else:
+                    # Redirect for HTML templates
+                    return redirect(url_for('waiter_dashboard'))
+        
+        # Login failed
+        if request.is_json:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid username or password'
+            }), 401
+        else:
+            flash('Invalid username or password.', 'error')
+    
     return render_template('login.html')
 
 @app.route('/logout')
