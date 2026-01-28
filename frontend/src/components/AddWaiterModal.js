@@ -26,21 +26,12 @@ const AddWaiterModal = ({ apiUrl, onClose, onSuccess }) => {
       submitData.append('username', formData.username);
       submitData.append('password', formData.password);
 
-      const response = await axios.post(`${apiUrl}/admin/add_waiter`, submitData);
-
-      if (response.data.status === 'success') {
-        onSuccess();
-        alert(response.data.message);
-      } else {
-        setError(response.data.message || 'Failed to add waiter');
-      }
+      await axios.post(`${apiUrl}/admin/add_waiter`, submitData);
+      onSuccess();
+      alert('Waiter added successfully');
     } catch (error) {
       console.error('Error adding waiter:', error);
-      if (error.response && error.response.data && error.response.data.message) {
-        setError(error.response.data.message);
-      } else {
-        setError('Error adding waiter. Please try again.');
-      }
+      setError('Error adding waiter. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -50,14 +41,14 @@ const AddWaiterModal = ({ apiUrl, onClose, onSuccess }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Add New Waiter</h2>
+          <h3>Add New Waiter</h3>
         </div>
 
         {error && <div className="error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="username">Username *</label>
+            <label htmlFor="username">Username:</label>
             <input
               type="text"
               id="username"
@@ -66,13 +57,11 @@ const AddWaiterModal = ({ apiUrl, onClose, onSuccess }) => {
               onChange={handleChange}
               required
               disabled={loading}
-              placeholder="Enter username"
-              minLength="3"
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password *</label>
+            <label htmlFor="password">Password:</label>
             <input
               type="password"
               id="password"
@@ -81,18 +70,13 @@ const AddWaiterModal = ({ apiUrl, onClose, onSuccess }) => {
               onChange={handleChange}
               required
               disabled={loading}
-              placeholder="Enter password"
-              minLength="6"
             />
-            <small style={{ color: '#6c757d', fontSize: '12px' }}>
-              Password must be at least 6 characters long
-            </small>
           </div>
 
           <div className="modal-actions">
             <button 
               type="button" 
-              className="btn btn-secondary" 
+              className="btn btn-danger" 
               onClick={onClose}
               disabled={loading}
             >
@@ -103,7 +87,7 @@ const AddWaiterModal = ({ apiUrl, onClose, onSuccess }) => {
               className="btn btn-success"
               disabled={loading}
             >
-              {loading ? 'Adding...' : 'Add Waiter'}
+              {loading ? 'Adding...' : 'Submit'}
             </button>
           </div>
         </form>

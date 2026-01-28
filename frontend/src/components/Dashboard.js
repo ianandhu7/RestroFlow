@@ -10,11 +10,6 @@ const Dashboard = ({ onLogout, apiUrl }) => {
     all_tables: [],
     customers: [],
     waiters: [],
-    analytics: {
-      avg_wait_time: 0,
-      longest_wait_time: 0,
-      seated_today: 0
-    },
     auto_allocator_status: 'OFF'
   });
   const [loading, setLoading] = useState(true);
@@ -47,15 +42,11 @@ const Dashboard = ({ onLogout, apiUrl }) => {
       const formData = new FormData();
       formData.append('table_id', tableId);
       
-      const endpoint = action === 'free' ? '/free_table' : '/block_table';
-      const response = await axios.post(`${apiUrl}${endpoint}`, formData);
-      
-      if (response.data.status === 'success') {
-        fetchDashboardData(); // Refresh data
-      }
+      await axios.post(`${apiUrl}/${action}`, formData);
+      fetchDashboardData(); // Refresh data
     } catch (error) {
-      console.error('Error updating table:', error);
-      alert('Error updating table status');
+      console.error(`Error with ${action}:`, error);
+      alert(`Error updating table`);
     }
   };
 
@@ -66,12 +57,9 @@ const Dashboard = ({ onLogout, apiUrl }) => {
         const formData = new FormData();
         formData.append('capacity', capacity);
         
-        const response = await axios.post(`${apiUrl}/add_table`, formData);
-        
-        if (response.data.status === 'success') {
-          fetchDashboardData();
-          alert(response.data.message);
-        }
+        await axios.post(`${apiUrl}/add_table`, formData);
+        alert('Table added successfully');
+        fetchDashboardData();
       } catch (error) {
         console.error('Error adding table:', error);
         alert('Error adding table');
@@ -85,11 +73,8 @@ const Dashboard = ({ onLogout, apiUrl }) => {
         const formData = new FormData();
         formData.append('customer_id', customerId);
         
-        const response = await axios.post(`${apiUrl}/remove_customer`, formData);
-        
-        if (response.data.status === 'success') {
-          fetchDashboardData();
-        }
+        await axios.post(`${apiUrl}/remove_customer`, formData);
+        fetchDashboardData();
       } catch (error) {
         console.error('Error removing customer:', error);
         alert('Error removing customer');
@@ -99,124 +84,145 @@ const Dashboard = ({ onLogout, apiUrl }) => {
 
   const handleToggleAutoAllocator = async () => {
     try {
-      const response = await axios.post(`${apiUrl}/toggle_auto_allocator`);
-      
-      if (response.data.status === 'success') {
-        fetchDashboardData();
-        alert(response.data.message);
-      }
+      await axios.post(`${apiUrl}/toggle_auto_allocator`);
+      fetchDashboardData();
+      alert('Auto-allocator toggled successfully');
     } catch (error) {
       console.error('Error toggling auto-allocator:', error);
       alert('Error toggling auto-allocator');
     }
   };
 
+  const occupiedTables = dashboardData.all_tables.filter(table => table.status === 'occupied').length;
+  const totalTables = dashboardData.all_tables.length;
+  const queueCount = dashboardData.customers.length;
+  const waiterCount = dashboardData.waiters.length;
+
   if (loading) {
-    return <div className="loading">Loading dashboard...</div>;
+    return (
+      <div className="loading-container">
+        <div className="loading">Loading RestroFlow Dashboard...</div>
+      </div>
+    );
   }
 
-  const occupiedTables = dashboardData.all_tables.filter(table => table.status === 'occupied').length;
-  const freeTables = dashboardData.all_tables.filter(table => table.status === 'free').length;
-
   return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        <div className="header-content">
-          <h1>🍽️ RestroFlow Dashboard</h1>
-          <div className="header-actions">
-            <div className="status-indicator">
-              <div className="status-dot"></div>
-              System Online
-            </div>
-            <button className="btn btn-danger" onClick={onLogout}>
-              Logout
-            </button>
-          </div>
+    <div className="dashboard-container">
+      {/* Header */}
+      <div className="header">
+        <h1>🍽️ RestroFlow Dashboard</h1>
+        <div className="header-right">
+          <span className="status-indicator"></span>
+          <span>System Online</span>
+          <button className="logout-btn" onClick={onLogout}>
+            Logout
+          </button>
         </div>
       </div>
 
-      <div className="container">
-        {error && <div className="error">{error}</div>}
+      {/* Error Display */}
+      {error && (
+        <div className="error" style={{ marginBottom: '24px' }}>
+          {error}
+        </div>
+      )}
 
-        {/* Stats Grid */}
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-number">{dashboardData.all_tables.length}</div>
-            <div className="stat-label">Total Tables</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">{occupiedTables}</div>
-            <div className="stat-label">Occupied Tables</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">{dashboardData.customers.length}</div>
-            <div className="stat-label">Customers in Queue</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">{freeTables}</div>
-            <div className="stat-label">Available Tables</div>
+      {/* Stats Grid */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-number">{totalTables}</div>
+          <div className="stat-label">Total Tables</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-number">{occupiedTables}</div>
+          <div className="stat-label">Occupied Tables</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-number">{queueCount}</div>
+          <div className="stat-label">Customers in Queue</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-number">{waiterCount}</div>
+          <div className="stat-label">Active Waiters</div>
+        </div>
+      </div>
+
+      {/* Dashboard Grid */}
+      <div className="dashboard-grid">
+        {/* Table Management */}
+        <div className="card">
+          <h2>📋 Table Status</h2>
+          <TableManagement 
+            tables={dashboardData.all_tables}
+            onTableAction={handleTableAction}
+          />
+          <div className="actions">
+            <button className="btn" onClick={handleAddTable}>
+              Add Table
+            </button>
+            <button className="btn btn-warning" onClick={fetchDashboardData}>
+              Refresh
+            </button>
           </div>
         </div>
 
-        {/* Main Dashboard Grid */}
-        <div className="dashboard-grid">
-          <div>
-            <TableManagement 
-              tables={dashboardData.all_tables}
-              onTableAction={handleTableAction}
-              onAddTable={handleAddTable}
-              onRefresh={fetchDashboardData}
-            />
+        {/* Customer Queue */}
+        <div className="card">
+          <h2>👥 Customer Queue</h2>
+          <CustomerQueue 
+            customers={dashboardData.customers}
+            onRemoveCustomer={handleRemoveCustomer}
+          />
+          <div className="actions">
+            <button 
+              className="btn btn-success" 
+              onClick={() => setShowAddCustomer(true)}
+            >
+              Add Customer
+            </button>
+            <button className="btn btn-warning" onClick={fetchDashboardData}>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="card">
+          <h2>👨‍💼 Quick Actions</h2>
+          <div className="actions">
+            <button 
+              className="btn" 
+              onClick={() => setShowAddWaiter(true)}
+            >
+              Add Waiter
+            </button>
+            <button 
+              className="btn btn-success" 
+              onClick={handleToggleAutoAllocator}
+            >
+              Toggle Auto-Seat
+            </button>
+            <button 
+              className="btn btn-warning" 
+              onClick={() => window.open(`${apiUrl}/health`, '_blank')}
+            >
+              System Health
+            </button>
           </div>
           
-          <div>
-            <CustomerQueue 
-              customers={dashboardData.customers}
-              onRemoveCustomer={handleRemoveCustomer}
-              onAddCustomer={() => setShowAddCustomer(true)}
-              onRefresh={fetchDashboardData}
-            />
-            
-            <div className="card" style={{ marginTop: '24px' }}>
-              <h2>⚙️ Quick Actions</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button 
-                  className="btn btn-success" 
-                  onClick={() => setShowAddWaiter(true)}
-                >
-                  👨‍💼 Add Waiter
-                </button>
-                <button 
-                  className="btn btn-warning" 
-                  onClick={handleToggleAutoAllocator}
-                >
-                  🔄 Toggle Auto-Seat ({dashboardData.auto_allocator_status})
-                </button>
-                <button 
-                  className="btn btn-secondary" 
-                  onClick={() => window.open(`${apiUrl}/health`, '_blank')}
-                >
-                  🔍 System Health
-                </button>
-              </div>
-              
-              <div style={{ marginTop: '20px', padding: '16px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-                <h3 style={{ margin: '0 0 12px 0', fontSize: '16px' }}>System Status</h3>
-                <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
-                  <div>✅ Database: Connected</div>
-                  <div>✅ Tables: {dashboardData.all_tables.length} configured</div>
-                  <div>✅ Waiters: {dashboardData.waiters.length} active</div>
-                  <div>✅ Auto-Allocator: {dashboardData.auto_allocator_status}</div>
-                </div>
-              </div>
-            </div>
+          <div className="system-status">
+            <h3>System Status</h3>
+            <p>✅ Database: Connected</p>
+            <p>✅ Tables: {totalTables} configured</p>
+            <p>✅ Waiters: {waiterCount} active</p>
+            <p>✅ Auto-Allocator: {dashboardData.auto_allocator_status}</p>
           </div>
         </div>
       </div>
 
       {/* Modals */}
       {showAddCustomer && (
-        <AddCustomerModal 
+        <AddCustomerModal
           apiUrl={apiUrl}
           onClose={() => setShowAddCustomer(false)}
           onSuccess={() => {
@@ -227,7 +233,7 @@ const Dashboard = ({ onLogout, apiUrl }) => {
       )}
 
       {showAddWaiter && (
-        <AddWaiterModal 
+        <AddWaiterModal
           apiUrl={apiUrl}
           onClose={() => setShowAddWaiter(false)}
           onSuccess={() => {
