@@ -181,19 +181,10 @@ def dashboard():
         waiters_list = []
         tables_for_filter_list = []
 
-    current_filters = {
-        'user_id': request.args.get('user_id', ''),
-        'table_id': request.args.get('table_id', ''),
-        'start_date': request.args.get('start_date', ''),
-        'end_date': request.args.get('end_date', ''),
-        'user_type': request.args.get('user_type', '')
-    }
-    
     return render_template(
-        'admin.html',
+        'working_admin.html',
         waiters=waiters_list,
-        tables=tables_for_filter_list,
-        current_filters=current_filters
+        tables=tables_for_filter_list
     )
 
 @app.route('/api/dashboard_data')

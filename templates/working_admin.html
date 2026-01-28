@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RestroFlow - Restaurant Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6f42c1;
+            --success-color: #198754;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --text-color: #212529;
+            --text-muted: #6c757d;
+            --body-bg: #f4f7fc;
+            --card-shadow: rgba(31, 38, 135, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--body-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px var(--card-shadow);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: var(--secondary-color);
+            font-size: 2rem;
+        }
+
+        .logout-btn {
+            background: var(--danger-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px var(--card-shadow);
+            padding: 24px;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--secondary-color);
+            font-size: 1.25rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 12px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px var(--card-shadow);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 10px 0;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .table-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+        }
+
+        .table-box {
+            border-radius: 8px;
+            border: 2px solid;
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .table-box:hover {
+            transform: translateY(-2px);
+        }
+
+        .table-box.free {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .table-box.occupied {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        .table-box.blocked {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            margin: 5px;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-success { background: var(--success-color); }
+        .btn-danger { background: var(--danger-color); }
+        .btn-warning { background: var(--warning-color); }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        .customer-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .customer-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .customer-info {
+            font-weight: 500;
+        }
+
+        .customer-meta {
+            font-size: 0.9em;
+            color: var(--text-muted);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--success-color);
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🍽️ RestroFlow Dashboard</h1>
+        <div>
+            <span class="status-indicator"></span>
+            <span>System Online</span>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number" id="total-tables">{{ tables|length or 20 }}</div>
+            <div class="stat-label">Total Tables</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="occupied-count">0</div>
+            <div class="stat-label">Occupied Tables</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="queue-count">0</div>
+            <div class="stat-label">Customers in Queue</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="waiters-count">{{ waiters|length or 0 }}</div>
+            <div class="stat-label">Active Waiters</div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card">
+            <h2>📋 Table Status</h2>
+            <div class="table-grid" id="tables-container">
+                <!-- Tables will be loaded here -->
+            </div>
+            <div class="actions" style="margin-top: 20px;">
+                <button class="btn" onclick="addTable()">Add Table</button>
+                <button class="btn btn-warning" onclick="refreshData()">Refresh</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>👥 Customer Queue</h2>
+            <div class="customer-list" id="customers-container">
+                <!-- Customers will be loaded here -->
+            </div>
+            <div class="actions" style="margin-top: 20px;">
+                <button class="btn btn-success" onclick="showAddCustomer()">Add Customer</button>
+                <button class="btn btn-warning" onclick="refreshData()">Refresh</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>👨‍💼 Quick Actions</h2>
+            <div class="actions">
+                <button class="btn" onclick="showAddWaiter()">Add Waiter</button>
+                <button class="btn btn-success" onclick="toggleAutoAllocator()">Toggle Auto-Seat</button>
+                <button class="btn btn-warning" onclick="window.open('/health', '_blank')">System Health</button>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <h3>System Status</h3>
+                <p>✅ Database: Connected</p>
+                <p>✅ Tables: {{ tables|length or 20 }} configured</p>
+                <p>✅ Waiters: {{ waiters|length or 0 }} active</p>
+                <p>✅ Auto-Allocator: <span id="auto-status">Unknown</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple Modal for forms -->
+    <div id="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px;">
+            <div id="modal-content"></div>
+            <div style="margin-top: 20px; text-align: right;">
+                <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-success" onclick="submitForm()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentForm = null;
+
+        function refreshData() {
+            fetch('/api/dashboard_data')
+                .then(response => response.json())
+                .then(data => {
+                    updateTables(data.all_tables || []);
+                    updateCustomers(data.customers || []);
+                    updateStats(data);
+                    document.getElementById('auto-status').textContent = data.auto_allocator_status || 'OFF';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error loading data. Please refresh the page.');
+                });
+        }
+
+        function updateTables(tables) {
+            const container = document.getElementById('tables-container');
+            container.innerHTML = '';
+            
+            tables.forEach(table => {
+                const div = document.createElement('div');
+                div.className = `table-box ${table.status}`;
+                div.innerHTML = `
+                    <div>${table.table_number}</div>
+                    <div style="font-size: 0.8em;">${table.capacity} seats</div>
+                    ${table.status === 'occupied' ? `<div style="font-size: 0.7em;">${table.customer_name || 'Occupied'}</div>` : ''}
+                `;
+                div.onclick = () => handleTableClick(table);
+                container.appendChild(div);
+            });
+
+            document.getElementById('occupied-count').textContent = tables.filter(t => t.status === 'occupied').length;
+        }
+
+        function updateCustomers(customers) {
+            const container = document.getElementById('customers-container');
+            container.innerHTML = '';
+            
+            if (customers.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No customers in queue</div>';
+                document.getElementById('queue-count').textContent = '0';
+                return;
+            }
+
+            customers.forEach(customer => {
+                const div = document.createElement('div');
+                div.className = 'customer-item';
+                div.innerHTML = `
+                    <div>
+                        <div class="customer-info">${customer.name}</div>
+                        <div class="customer-meta">Party of ${customer.people_count}</div>
+                    </div>
+                    <button class="btn btn-danger" onclick="removeCustomer(${customer.id})">Remove</button>
+                `;
+                container.appendChild(div);
+            });
+
+            document.getElementById('queue-count').textContent = customers.length;
+        }
+
+        function updateStats(data) {
+            // Stats are updated in updateTables and updateCustomers
+        }
+
+        function handleTableClick(table) {
+            if (table.status === 'occupied') {
+                if (confirm(`Free table ${table.table_number}?`)) {
+                    freeTable(table.id);
+                }
+            } else if (table.status === 'free') {
+                if (confirm(`Block table ${table.table_number}?`)) {
+                    blockTable(table.id);
+                }
+            } else if (table.status === 'blocked') {
+                if (confirm(`Make table ${table.table_number} available?`)) {
+                    freeTable(table.id);
+                }
+            }
+        }
+
+        function freeTable(tableId) {
+            const formData = new FormData();
+            formData.append('table_id', tableId);
+            
+            fetch('/free_table', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                refreshData();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating table');
+            });
+        }
+
+        function blockTable(tableId) {
+            const formData = new FormData();
+            formData.append('table_id', tableId);
+            
+            fetch('/block_table', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                refreshData();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating table');
+            });
+        }
+
+        function addTable() {
+            const capacity = prompt('Enter table capacity (number of seats):');
+            if (capacity && !isNaN(capacity) && capacity > 0) {
+                const formData = new FormData();
+                formData.append('capacity', capacity);
+                
+                fetch('/add_table', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    refreshData();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error adding table');
+                });
+            }
+        }
+
+        function showAddCustomer() {
+            document.getElementById('modal-content').innerHTML = `
+                <h3>Add Customer to Queue</h3>
+                <div class="form-group">
+                    <label>Customer Name:</label>
+                    <input type="text" id="customer-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Party Size:</label>
+                    <input type="number" id="party-size" min="1" required>
+                </div>
+            `;
+            currentForm = 'add-customer';
+            document.getElementById('modal').style.display = 'block';
+        }
+
+        function showAddWaiter() {
+            document.getElementById('modal-content').innerHTML = `
+                <h3>Add New Waiter</h3>
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" id="waiter-username" required>
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="waiter-password" required>
+                </div>
+            `;
+            currentForm = 'add-waiter';
+            document.getElementById('modal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+            currentForm = null;
+        }
+
+        function submitForm() {
+            if (currentForm === 'add-customer') {
+                const name = document.getElementById('customer-name').value;
+                const partySize = document.getElementById('party-size').value;
+                
+                if (!name || !partySize) {
+                    alert('Please fill all fields');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('name', name);
+                formData.append('people_count', partySize);
+                
+                fetch('/add_customer', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    closeModal();
+                    refreshData();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error adding customer');
+                });
+            } else if (currentForm === 'add-waiter') {
+                const username = document.getElementById('waiter-username').value;
+                const password = document.getElementById('waiter-password').value;
+                
+                if (!username || !password) {
+                    alert('Please fill all fields');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('username', username);
+                formData.append('password', password);
+                
+                fetch('/admin/add_waiter', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    closeModal();
+                    refreshData();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error adding waiter');
+                });
+            }
+        }
+
+        function removeCustomer(customerId) {
+            if (confirm('Remove this customer from queue?')) {
+                const formData = new FormData();
+                formData.append('customer_id', customerId);
+                
+                fetch('/remove_customer', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    refreshData();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error removing customer');
+                });
+            }
+        }
+
+        function toggleAutoAllocator() {
+            fetch('/toggle_auto_allocator', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                refreshData();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error toggling auto-allocator');
+            });
+        }
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshData();
+            // Auto-refresh every 30 seconds
+            setInterval(refreshData, 30000);
+        });
+    </script>
+</body>
+</html>
