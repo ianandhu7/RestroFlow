@@ -26,10 +26,11 @@ const Login = ({ onLogin, apiUrl }) => {
         headers: {
           'Content-Type': 'application/json',
         },
+        withCredentials: true
       });
 
       if (response.data.success) {
-        onLogin(response.data.token || 'authenticated');
+        onLogin();
       } else {
         setError('Invalid username or password');
       }

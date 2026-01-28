@@ -26,7 +26,9 @@ const AddWaiterModal = ({ apiUrl, onClose, onSuccess }) => {
       submitData.append('username', formData.username);
       submitData.append('password', formData.password);
 
-      await axios.post(`${apiUrl}/admin/add_waiter`, submitData);
+      await axios.post(`${apiUrl}/admin/add_waiter`, submitData, {
+        withCredentials: true
+      });
       onSuccess();
       alert('Waiter added successfully');
     } catch (error) {

@@ -26,7 +26,9 @@ const AddCustomerModal = ({ apiUrl, onClose, onSuccess }) => {
       submitData.append('name', formData.name);
       submitData.append('people_count', formData.people_count);
 
-      await axios.post(`${apiUrl}/add_customer`, submitData);
+      await axios.post(`${apiUrl}/add_customer`, submitData, {
+        withCredentials: true
+      });
       onSuccess();
       alert('Customer added successfully');
     } catch (error) {

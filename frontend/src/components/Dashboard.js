@@ -19,7 +19,9 @@ const Dashboard = ({ onLogout, apiUrl }) => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await axios.get(`${apiUrl}/api/dashboard_data`);
+      const response = await axios.get(`${apiUrl}/api/dashboard_data`, {
+        withCredentials: true
+      });
       setDashboardData(response.data);
       setError('');
     } catch (error) {
@@ -42,7 +44,9 @@ const Dashboard = ({ onLogout, apiUrl }) => {
       const formData = new FormData();
       formData.append('table_id', tableId);
       
-      await axios.post(`${apiUrl}/${action}`, formData);
+      await axios.post(`${apiUrl}/${action}`, formData, {
+        withCredentials: true
+      });
       fetchDashboardData(); // Refresh data
     } catch (error) {
       console.error(`Error with ${action}:`, error);
@@ -57,7 +61,9 @@ const Dashboard = ({ onLogout, apiUrl }) => {
         const formData = new FormData();
         formData.append('capacity', capacity);
         
-        await axios.post(`${apiUrl}/add_table`, formData);
+        await axios.post(`${apiUrl}/add_table`, formData, {
+          withCredentials: true
+        });
         alert('Table added successfully');
         fetchDashboardData();
       } catch (error) {
@@ -73,7 +79,9 @@ const Dashboard = ({ onLogout, apiUrl }) => {
         const formData = new FormData();
         formData.append('customer_id', customerId);
         
-        await axios.post(`${apiUrl}/remove_customer`, formData);
+        await axios.post(`${apiUrl}/remove_customer`, formData, {
+          withCredentials: true
+        });
         fetchDashboardData();
       } catch (error) {
         console.error('Error removing customer:', error);
@@ -84,7 +92,9 @@ const Dashboard = ({ onLogout, apiUrl }) => {
 
   const handleToggleAutoAllocator = async () => {
     try {
-      await axios.post(`${apiUrl}/toggle_auto_allocator`);
+      await axios.post(`${apiUrl}/toggle_auto_allocator`, {}, {
+        withCredentials: true
+      });
       fetchDashboardData();
       alert('Auto-allocator toggled successfully');
     } catch (error) {
